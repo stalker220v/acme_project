@@ -1,3 +1,6 @@
+# Импортируем класс пагинатора.
+from django.core.paginator import Paginator
+
 from django.shortcuts import render, get_object_or_404, redirect
 
 # Импортируем класс BirthdayForm, чтобы создать экземпляр формы.
@@ -10,10 +13,22 @@ from .utils import calculate_birthday_countdown
 from .models import Birthday
 
 def birthday_list(request):
-    # Получаем все объекты модели Birthday из БД.
-    birthdays = Birthday.objects.all()
+    # Получаем список всех объектов с сортировкой по id.
+    birthdays = Birthday.objects.order_by('id')
+    # Создаём объект пагинатора с количеством 10 записей на страницу.
+    paginator = Paginator(birthdays, 10)
+
+    # Получаем из запроса значение параметра page.
+    page_number = request.GET.get('page')
+    # Получаем запрошенную страницу пагинатора.
+    # Если параметра page нет в запросе или его значение не приводится к числу,
+    # вернётся первая страница.
+    page_obj = paginator.get_page(page_number)
+    # Вместо полного списка объектов передаём в контекст
+    # объект страницы пагинатора
+
     # Передаём их в контекст шаблона.
-    context = {'birthdays': birthdays}
+    context = {'page_obj': page_obj}
     return render(request, 'birthday/birthday_list.html', context)
 
 # Добавим опциональный параметр pk.
@@ -37,7 +52,12 @@ def birthday(request, pk=None):
     # если же объект request.GET пуст — срабатывает условиe or и форма
     # создаётся без параметров, через BirthdayForm(None) — это идентично
     # обычному BirthdayForm().
-    form = BirthdayForm(request.POST or None, instance=instance)
+    form = BirthdayForm(
+        request.POST or None,
+        # Файлы, переданные в запросе, указываются отдельно.
+        files=request.FILES or None,
+        instance=instance
+    )
     # Создаём словарь контекста сразу после инициализации формы.
     context = {'form': form}
     # Если форма валидна...
