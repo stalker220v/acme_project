@@ -12,6 +12,8 @@ from .utils import calculate_birthday_countdown
 # Импортируем модель дней рождения.
 from .models import Birthday
 
+from django.views.generic import ListView
+
 def birthday_list(request):
     # Получаем список всех объектов с сортировкой по id.
     birthdays = Birthday.objects.order_by('id')
