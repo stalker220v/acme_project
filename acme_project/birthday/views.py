@@ -12,16 +12,19 @@ from .utils import calculate_birthday_countdown
 # Импортируем модель дней рождения.
 from .models import Birthday
 
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import (
+    CreateView, DeleteView, DetailView, ListView, UpdateView
+)
 from django.urls import reverse_lazy
 
 
 # Создаём миксин.
-class BirthdayMixin:
-    model = Birthday
-    form_class = BirthdayForm
-    template_name = 'birthday/birthday.html'
-    success_url = reverse_lazy('birthday:list')
+# Убрали миксин потому что отпала надобность в success_url так как создали
+# в моделе функцию get_absolute_url для получения абсолютного урл для каждой записи
+# а model = Birthday опять перенесли в классы
+# class BirthdayMixin:
+#     model = Birthday
+#     success_url = reverse_lazy('birthday:list')
 
 
 # Наследуем класс от встроенного ListView:
@@ -33,9 +36,9 @@ class BirthdayListView(ListView):
     # ...и даже настройки пагинации:
     paginate_by = 10
 
-class BirthdayCreateView(BirthdayMixin, CreateView):
-    # # Все атрибуты унаследованы от BirthdayMixin, поэтому создали класс и всё)
-    pass
+class BirthdayCreateView(CreateView):
+    model = Birthday
+    form_class = BirthdayForm
     # # Указываем модель, с которой работает CBV...
     # model = Birthday
     # # Этот класс сам может создать форму на основе модели!
@@ -49,10 +52,13 @@ class BirthdayCreateView(BirthdayMixin, CreateView):
     # # после создания объекта:
     # success_url = reverse_lazy('birthday:list')
 
+
+
+
 class BirthdayUpdateView(UpdateView):
     """Редактирование записей"""
-    # И здесь все атрибуты наследуются от BirthdayMixin.
-    pass
+    model = Birthday
+    form_class = BirthdayForm
     # model = Birthday
     # form_class = BirthdayForm
     # template_name = 'birthday/birthday.html'
@@ -126,7 +132,6 @@ class BirthdayUpdateView(UpdateView):
 
 class BirthdayDeleteView(DeleteView):
     model = Birthday
-    success_url = reverse_lazy('birthday:list')
 
 # def delete_birthday(request, pk):
 #     # Получаем объект модели или выбрасываем 404 ошибку.
@@ -143,3 +148,17 @@ class BirthdayDeleteView(DeleteView):
 #         return redirect('birthday:list')
 #     # Если был получен GET-запрос — отображаем форму.
 #     return render(request, 'birthday/birthday.html', context)
+
+class BirthdayDetailView(DetailView):
+    model = Birthday
+
+    def get_context_data(self, **kwargs):
+        # Получаем словарь контекста:
+        context = super().get_context_data(**kwargs)
+        # Добавляем в словарь новый ключ:
+        context['birthday_countdown'] = calculate_birthday_countdown(
+            # Дату рождения берём из объекта в словаре context:
+            self.object.birthday
+        )
+        # Возвращаем словарь контекста.
+        return context

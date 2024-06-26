@@ -59,6 +59,18 @@ DATABASES = {
     }
 }
 
+# Подключаем бэкенд filebased.EmailBackend:
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+# Указываем директорию, в которую будут сохраняться файлы писем:
+EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+
+LOGIN_REDIRECT_URL = 'pages:homepage'
+
+# Адрес страницы логина можно указать в настройках проекта,
+# в константе LOGIN_URL. В ней указывается name страницы логина.
+# Добавьте в settings.py константу LOGIN_URL:
+LOGIN_URL = 'login'
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
