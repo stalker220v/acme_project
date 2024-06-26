@@ -17,6 +17,14 @@ from django.views.generic import (
 )
 from django.urls import reverse_lazy
 
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+
+from django.contrib.auth.mixins import UserPassesTestMixin
+
+@login_required
+def simple_view(request):
+    return HttpResponse('Страница для залогиненных пользователей!')
 
 # Создаём миксин.
 # Убрали миксин потому что отпала надобность в success_url так как создали
@@ -26,6 +34,22 @@ from django.urls import reverse_lazy
 #     model = Birthday
 #     success_url = reverse_lazy('birthday:list')
 
+# Класс UserPassesTestMixin унаследован от AccessMixin,
+# который по умолчанию переадресует анонимных пользователей на страницу логина.
+# Поэтому при использовании UserPassesTestMixin миксин LoginRequiredMixin
+# можно не использовать: он будет избыточным.
+
+# Такую проверку надо разместить во всех CBV, где нужна проверка авторства.
+# Выглядит громоздко: помимо того, что при объявлении CBV надо добавить
+# миксин UserPassesTestMixin, в каждый класс придётся добавлять одно и то же
+# описание метода test_func().
+# В такой ситуации гораздо выгоднее написать собственный миксин,
+# унаследованный от UserPassesTestMixin:
+class OnlyAuthorMixin(UserPassesTestMixin):
+
+    def test_func(self):
+        object = self.get_object()
+        return object.author == self.request.user
 
 # Наследуем класс от встроенного ListView:
 class BirthdayListView(ListView):
@@ -51,11 +75,15 @@ class BirthdayCreateView(CreateView):
     # # Указываем namespace:name страницы, куда будет перенаправлен пользователь
     # # после создания объекта:
     # success_url = reverse_lazy('birthday:list')
+    def form_valid(self, form):
+        # Присвоить полю author объект пользователя из запроса.
+        form.instance.author = self.request.user
+        # Продолжить валидацию, описанную в форме.
+        return super().form_valid(form)
 
 
 
-
-class BirthdayUpdateView(UpdateView):
+class BirthdayUpdateView(OnlyAuthorMixin, UpdateView):
     """Редактирование записей"""
     model = Birthday
     form_class = BirthdayForm
@@ -130,7 +158,7 @@ class BirthdayUpdateView(UpdateView):
 #         context.update({'birthday_countdown': birthday_countdown})
 #     return render(request, 'birthday/birthday.html', context)
 
-class BirthdayDeleteView(DeleteView):
+class BirthdayDeleteView(OnlyAuthorMixin, DeleteView):
     model = Birthday
 
 # def delete_birthday(request, pk):
